@@ -13,8 +13,11 @@ public class LoadImageApp extends JFrame {
     private JLabel imageLabel;
     private JLabel rgbLabel;
     private JLabel resolutionLabel;
+    private JButton zoomInButton;
+    private JButton zoomOutButton;
 
     // Konstruktor
+
     public LoadImageApp() {
         setTitle("Cargar Imagen");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -26,6 +29,20 @@ public class LoadImageApp extends JFrame {
         imageLabel.setHorizontalAlignment(JLabel.CENTER);
         rgbLabel = new JLabel();
         resolutionLabel = new JLabel();
+        zoomInButton = new JButton("Zoom In");
+        zoomOutButton = new JButton("Zoom Out");
+
+        zoomInButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                zoomIn();
+            }
+        });
+
+        zoomOutButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                zoomOut();
+            }
+        });
 
         // Membuat Tombol "Tampilkan Resolusi"
         JButton showResolutionButton = new JButton("Detail");
@@ -83,7 +100,6 @@ public class LoadImageApp extends JFrame {
         // Menambahkan komponen ke frame
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
-        topPanel.add(loadButton, BorderLayout.WEST);
         topPanel.add(showResolutionButton, BorderLayout.CENTER);
 
         setLayout(new BorderLayout());
@@ -99,6 +115,45 @@ public class LoadImageApp extends JFrame {
         fileMenu.add(insertPictureMenuItem);
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
+
+        // Menambahkan tombol "Insert Picture" ke status bar view
+        JMenu viewMenu = new JMenu("View");
+        JMenuItem zoomInMenuItem = new JMenuItem("Zoom In");
+        zoomInMenuItem.addActionListener(zoomInButton.getActionListeners()[0]);
+        viewMenu.add(zoomInMenuItem);
+
+        JMenuItem zoomOutMenuItem = new JMenuItem("Zoom Out");
+        zoomOutMenuItem.addActionListener(zoomOutButton.getActionListeners()[0]);
+        viewMenu.add(zoomOutMenuItem);
+
+        menuBar.add(viewMenu);
+
+    }
+
+    private void zoomIn() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            Image image = icon.getImage();
+            int width = image.getWidth(imageLabel);
+            int height = image.getHeight(imageLabel);
+            int newWidth = (int) (width * 1.1);
+            int newHeight = (int) (height * 1.1);
+            Image newImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(newImage));
+        }
+    }
+
+    private void zoomOut() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            Image image = icon.getImage();
+            int width = image.getWidth(imageLabel);
+            int height = image.getHeight(imageLabel);
+            int newWidth = (int) (width / 1.1);
+            int newHeight = (int) (height / 1.1);
+            Image newImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(newImage));
+        }
     }
 
     public static void main(String[] args) {
