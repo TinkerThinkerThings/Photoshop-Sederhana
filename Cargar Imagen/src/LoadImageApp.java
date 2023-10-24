@@ -31,7 +31,7 @@ public class LoadImageApp extends JFrame {
         resolutionLabel = new JLabel();
         zoomInButton = new JButton("Zoom In");
         zoomOutButton = new JButton("Zoom Out");
-
+        JButton showResolutionButton = new JButton("Detail");
         zoomInButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 zoomIn();
@@ -43,9 +43,6 @@ public class LoadImageApp extends JFrame {
                 zoomOut();
             }
         });
-
-        // Membuat Tombol "Tampilkan Resolusi"
-        JButton showResolutionButton = new JButton("Detail");
 
         // Menambahkan Aksi ke Tombol "Tampilkan Resolusi"
         showResolutionButton.addActionListener(new ActionListener() {
@@ -100,14 +97,13 @@ public class LoadImageApp extends JFrame {
         // Menambahkan komponen ke frame
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
-        topPanel.add(showResolutionButton, BorderLayout.CENTER);
 
         setLayout(new BorderLayout());
         add(topPanel, BorderLayout.NORTH);
         add(imageLabel, BorderLayout.CENTER);
         add(rgbLabel, BorderLayout.SOUTH);
 
-        // Menambahkan tombol "Insert Picture" ke status bar file
+        // Menambahkan tombol ke status bar file
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
         JMenuItem insertPictureMenuItem = new JMenuItem("Insert Picture");
@@ -125,9 +121,10 @@ public class LoadImageApp extends JFrame {
         JMenuItem zoomOutMenuItem = new JMenuItem("Zoom Out");
         zoomOutMenuItem.addActionListener(zoomOutButton.getActionListeners()[0]);
         viewMenu.add(zoomOutMenuItem);
-
+        JMenuItem resolutionItem = new JMenuItem("Detail");
+        resolutionItem.addActionListener(showResolutionButton.getActionListeners()[0]);
+        viewMenu.add(resolutionItem);
         menuBar.add(viewMenu);
-
     }
 
     private void zoomIn() {
