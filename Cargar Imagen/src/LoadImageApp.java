@@ -112,7 +112,7 @@ public class LoadImageApp extends JFrame {
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
 
-        // Menambahkan tombol "Insert Picture" ke status bar view
+        // Menambahkan  status bar view
         JMenu viewMenu = new JMenu("View");
         JMenuItem zoomInMenuItem = new JMenuItem("Zoom In");
         zoomInMenuItem.addActionListener(zoomInButton.getActionListeners()[0]);
@@ -121,10 +121,15 @@ public class LoadImageApp extends JFrame {
         JMenuItem zoomOutMenuItem = new JMenuItem("Zoom Out");
         zoomOutMenuItem.addActionListener(zoomOutButton.getActionListeners()[0]);
         viewMenu.add(zoomOutMenuItem);
+        //resolusi
         JMenuItem resolutionItem = new JMenuItem("Detail");
         resolutionItem.addActionListener(showResolutionButton.getActionListeners()[0]);
         viewMenu.add(resolutionItem);
         menuBar.add(viewMenu);
+
+        // menambahkan status bar edit
+        JMenu editMenu = new JMenu("Edit");
+        menuBar.add(editMenu);
     }
 
     private void zoomIn() {
