@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -13,8 +14,11 @@ public class LoadImageApp extends JFrame {
     private JLabel imageLabel;
     private JLabel rgbLabel;
     private JLabel resolutionLabel;
+    private JButton zoomInButton;
+    private JButton zoomOutButton;
 
     // Konstruktor
+
     public LoadImageApp() {
         setTitle("Cargar Imagen");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -26,9 +30,20 @@ public class LoadImageApp extends JFrame {
         imageLabel.setHorizontalAlignment(JLabel.CENTER);
         rgbLabel = new JLabel();
         resolutionLabel = new JLabel();
-
-        // Membuat Tombol "Tampilkan Resolusi"
+        zoomInButton = new JButton("Zoom In");
+        zoomOutButton = new JButton("Zoom Out");
         JButton showResolutionButton = new JButton("Detail");
+        zoomInButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                zoomIn();
+            }
+        });
+
+        zoomOutButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                zoomOut();
+            }
+        });
 
         // Menambahkan Aksi ke Tombol "Tampilkan Resolusi"
         showResolutionButton.addActionListener(new ActionListener() {
@@ -65,17 +80,21 @@ public class LoadImageApp extends JFrame {
         });
 
         // Menambahkan MouseListener untuk label gambar
-        imageLabel.addMouseListener(new MouseAdapter() {
+        // Menambahkan MouseListener untuk label gambar
+        imageLabel.addMouseMotionListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
+            public void mouseMoved(MouseEvent e) {
                 if (imageLabel.getIcon() != null) {
                     ImageIcon icon = (ImageIcon) imageLabel.getIcon();
                     BufferedImage image = (BufferedImage) icon.getImage();
                     int x = e.getX();
                     int y = e.getY();
-                    Color pixelColor = new Color(image.getRGB(x, y));
-                    rgbLabel.setText(
-                            "RGB: " + pixelColor.getRed() + ", " + pixelColor.getGreen() + ", " + pixelColor.getBlue());
+                    if (x < image.getWidth() && y < image.getHeight()) {
+                        Color pixelColor = new Color(image.getRGB(x, y));
+                        rgbLabel.setText(
+                                "RGB: " + pixelColor.getRed() + ", " + pixelColor.getGreen() + ", "
+                                        + pixelColor.getBlue());
+                    }
                 }
             }
         });
@@ -83,15 +102,13 @@ public class LoadImageApp extends JFrame {
         // Menambahkan komponen ke frame
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
-        topPanel.add(loadButton, BorderLayout.WEST);
-        topPanel.add(showResolutionButton, BorderLayout.CENTER);
 
         setLayout(new BorderLayout());
         add(topPanel, BorderLayout.NORTH);
         add(imageLabel, BorderLayout.CENTER);
         add(rgbLabel, BorderLayout.SOUTH);
 
-        // Menambahkan tombol "Insert Picture" ke status bar file
+        // Menambahkan tombol ke status bar file
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
         JMenuItem insertPictureMenuItem = new JMenuItem("Insert Picture");
@@ -99,6 +116,72 @@ public class LoadImageApp extends JFrame {
         fileMenu.add(insertPictureMenuItem);
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
+
+        // Menambahkan status bar view
+        JMenu viewMenu = new JMenu("View");
+        JMenuItem zoomInMenuItem = new JMenuItem("Zoom In");
+        zoomInMenuItem.addActionListener(zoomInButton.getActionListeners()[0]);
+        viewMenu.add(zoomInMenuItem);
+
+        JMenuItem zoomOutMenuItem = new JMenuItem("Zoom Out");
+        zoomOutMenuItem.addActionListener(zoomOutButton.getActionListeners()[0]);
+        viewMenu.add(zoomOutMenuItem);
+        // resolusi
+        JMenuItem resolutionItem = new JMenuItem("Detail");
+        resolutionItem.addActionListener(showResolutionButton.getActionListeners()[0]);
+        viewMenu.add(resolutionItem);
+        menuBar.add(viewMenu);
+
+        // menambahkan status bar edit
+        JMenu editMenu = new JMenu("Edit");
+        JMenuItem resizeMenuItem = new JMenuItem("Resize Image");
+        resizeMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (imageLabel.getIcon() != null) {
+                    ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+                    BufferedImage image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+                            BufferedImage.TYPE_INT_ARGB);
+                    Graphics g = image.createGraphics();
+                    icon.paintIcon(null, g, 0, 0);
+                    g.dispose();
+                    int newWidth = Integer.parseInt(JOptionPane.showInputDialog(null, "Enter new width:"));
+                    int newHeight = Integer.parseInt(JOptionPane.showInputDialog(null, "Enter new height:"));
+                    Image newImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+                    imageLabel.setIcon(new ImageIcon(newImage));
+                    resolutionLabel.setText("Resolusi: " + newWidth + "x" + newHeight);
+                }
+            }
+        });
+        editMenu.add(resizeMenuItem);
+        menuBar.add(editMenu);
+
+    }
+
+    private void zoomIn() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            Image image = icon.getImage();
+            int width = image.getWidth(imageLabel);
+            int height = image.getHeight(imageLabel);
+            int newWidth = (int) (width * 1.1);
+            int newHeight = (int) (height * 1.1);
+            Image newImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(newImage));
+        }
+    }
+
+    private void zoomOut() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            Image image = icon.getImage();
+            int width = image.getWidth(imageLabel);
+            int height = image.getHeight(imageLabel);
+            int newWidth = (int) (width / 1.1);
+            int newHeight = (int) (height / 1.1);
+            Image newImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(newImage));
+        }
     }
 
     public static void main(String[] args) {
