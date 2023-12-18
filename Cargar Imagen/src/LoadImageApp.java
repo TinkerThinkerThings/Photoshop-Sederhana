@@ -3,6 +3,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.color.ColorSpace;
@@ -115,6 +117,16 @@ public class LoadImageApp extends JFrame {
         resolutionItem.addActionListener(showResolutionButton.getActionListeners()[0]);
         viewMenu.add(resolutionItem);
         menuBar.add(viewMenu);
+        JMenu histogramMenu = new JMenu("Histogram");
+        JMenuItem colorHistogramItem = new JMenuItem("Color Histogram");
+        colorHistogramItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showColorHistogram();
+            }
+        });
+        histogramMenu.add(colorHistogramItem);
+        menuBar.add(histogramMenu);
 
         JMenu editMenu = new JMenu("Edit");
         JMenuItem resizeMenuItem = new JMenuItem("Resize Image");
@@ -135,6 +147,7 @@ public class LoadImageApp extends JFrame {
                     resolutionLabel.setText("Resolusi: " + newWidth + "x" + newHeight);
                 }
             }
+
         });
         editMenu.add(resizeMenuItem);
 
@@ -168,6 +181,7 @@ public class LoadImageApp extends JFrame {
         });
         editMenu.add(negativeMenuItem);
         menuBar.add(editMenu);
+        // Menambahkan item menu Histogram Warna
     }
 
     private void zoomIn() {
@@ -265,6 +279,76 @@ public class LoadImageApp extends JFrame {
 
             ImageIcon negativeIcon = new ImageIcon(image);
             imageLabel.setIcon(negativeIcon);
+        }
+    }
+
+    // Method untuk menampilkan histogram warna
+    private void showColorHistogram() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+                    BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            int[] redHistogram = new int[256];
+            int[] greenHistogram = new int[256];
+            int[] blueHistogram = new int[256];
+
+            // Hitung histogram untuk setiap komponen warna
+            for (int y = 0; y < image.getHeight(); y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    Color pixelColor = new Color(image.getRGB(x, y));
+                    redHistogram[pixelColor.getRed()]++;
+                    greenHistogram[pixelColor.getGreen()]++;
+                    blueHistogram[pixelColor.getBlue()]++;
+                }
+            }
+
+            // Buat BufferedImage baru untuk menampung histogram
+            BufferedImage histogramImage = new BufferedImage(800, 300, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D histogramGraphics = histogramImage.createGraphics();
+            drawHistogram(histogramGraphics, redHistogram, greenHistogram, blueHistogram);
+            histogramGraphics.dispose();
+
+            // Tampilkan histogram dalam jendela pop-up
+            ImageIcon histogramIcon = new ImageIcon(histogramImage);
+            JLabel histogramLabel = new JLabel(histogramIcon);
+            JOptionPane.showMessageDialog(null, histogramLabel, "Color Histogram", JOptionPane.PLAIN_MESSAGE);
+        }
+    }
+
+    private void drawHistogram(Graphics g, int[] redHistogram, int[] greenHistogram, int[] blueHistogram) {
+        int maxFrequency = Math.max(
+                Math.max(Arrays.stream(redHistogram).max().orElse(0), Arrays.stream(greenHistogram).max().orElse(0)),
+                Arrays.stream(blueHistogram).max().orElse(0));
+
+        int histogramHeight = 200;
+        int barWidth = 1;
+        int spacing = 2;
+        int startX = 20;
+        int startY = histogramHeight + 20;
+
+        g.setColor(Color.RED);
+        for (int i = 0; i < 256; i++) {
+            int barHeight = (int) ((double) redHistogram[i] / maxFrequency * histogramHeight);
+            g.fillRect(startX + i * (barWidth + spacing), startY - barHeight, barWidth, barHeight);
+        }
+
+        g.setColor(Color.GREEN);
+        for (int i = 0; i < 256; i++) {
+            int barHeight = (int) ((double) greenHistogram[i] / maxFrequency * histogramHeight);
+            g.fillRect(startX + i * (barWidth + spacing), startY + histogramHeight + 10 - barHeight, barWidth,
+                    barHeight);
+        }
+
+        g.setColor(Color.BLUE);
+        for (int i = 0; i < 256; i++) {
+            int barHeight = (int) ((double) blueHistogram[i] / maxFrequency * histogramHeight);
+            g.fillRect(startX + i * (barWidth + spacing), startY + 2 * (histogramHeight + 10) - barHeight, barWidth,
+                    barHeight);
         }
     }
 
