@@ -1,14 +1,12 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.awt.color.ColorSpace;
+import java.awt.image.ColorConvertOp;
 
 public class LoadImageApp extends JFrame {
     private JLabel imageLabel;
@@ -17,14 +15,11 @@ public class LoadImageApp extends JFrame {
     private JButton zoomInButton;
     private JButton zoomOutButton;
 
-    // Konstruktor
-
     public LoadImageApp() {
         setTitle("Cargar Imagen");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 600);
 
-        // Membuat Tombol "Insert Picture"
         JButton loadButton = new JButton("Insert Picture");
         imageLabel = new JLabel();
         imageLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -45,18 +40,13 @@ public class LoadImageApp extends JFrame {
             }
         });
 
-        // Menambahkan Aksi ke Tombol "Tampilkan Resolusi"
         showResolutionButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                // Mengambil Teks Resolusi dari label "resolutionLabel"
                 String resolutionText = resolutionLabel.getText();
-
-                // Menampilkan resolusi dalam pesan pop-up
                 JOptionPane.showMessageDialog(null, resolutionText, "Resolusi Gambar", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
-        // Menambahkan aksi ke tombol "Muat Gambar"
         loadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 JFileChooser fileChooser = new JFileChooser();
@@ -64,11 +54,10 @@ public class LoadImageApp extends JFrame {
                 if (returnValue == JFileChooser.APPROVE_OPTION) {
                     File selectedFile = fileChooser.getSelectedFile();
                     try {
-                        // Memuat gambar yang dipilih
                         BufferedImage image = ImageIO.read(selectedFile);
                         ImageIcon icon = new ImageIcon(image);
                         imageLabel.setIcon(icon);
-                        rgbLabel.setText(""); // Menghapus teks RGB saat gambar diubah
+                        rgbLabel.setText("");
                         int width = image.getWidth();
                         int height = image.getHeight();
                         resolutionLabel.setText("Resolusi: " + width + "x" + height);
@@ -79,8 +68,6 @@ public class LoadImageApp extends JFrame {
             }
         });
 
-        // Menambahkan MouseListener untuk label gambar
-        // Menambahkan MouseListener untuk label gambar
         imageLabel.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
@@ -99,7 +86,6 @@ public class LoadImageApp extends JFrame {
             }
         });
 
-        // Menambahkan komponen ke frame
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BorderLayout());
 
@@ -108,7 +94,6 @@ public class LoadImageApp extends JFrame {
         add(imageLabel, BorderLayout.CENTER);
         add(rgbLabel, BorderLayout.SOUTH);
 
-        // Menambahkan tombol ke status bar file
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
         JMenuItem insertPictureMenuItem = new JMenuItem("Insert Picture");
@@ -117,7 +102,6 @@ public class LoadImageApp extends JFrame {
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
 
-        // Menambahkan status bar view
         JMenu viewMenu = new JMenu("View");
         JMenuItem zoomInMenuItem = new JMenuItem("Zoom In");
         zoomInMenuItem.addActionListener(zoomInButton.getActionListeners()[0]);
@@ -126,13 +110,12 @@ public class LoadImageApp extends JFrame {
         JMenuItem zoomOutMenuItem = new JMenuItem("Zoom Out");
         zoomOutMenuItem.addActionListener(zoomOutButton.getActionListeners()[0]);
         viewMenu.add(zoomOutMenuItem);
-        // resolusi
+
         JMenuItem resolutionItem = new JMenuItem("Detail");
         resolutionItem.addActionListener(showResolutionButton.getActionListeners()[0]);
         viewMenu.add(resolutionItem);
         menuBar.add(viewMenu);
 
-        // menambahkan status bar edit
         JMenu editMenu = new JMenu("Edit");
         JMenuItem resizeMenuItem = new JMenuItem("Resize Image");
         resizeMenuItem.addActionListener(new ActionListener() {
@@ -154,8 +137,17 @@ public class LoadImageApp extends JFrame {
             }
         });
         editMenu.add(resizeMenuItem);
-        menuBar.add(editMenu);
 
+        JMenuItem grayscaleMenuItem = new JMenuItem("Grayscale");
+        grayscaleMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                convertToGrayscale();
+            }
+        });
+        editMenu.add(grayscaleMenuItem);
+
+        menuBar.add(editMenu);
     }
 
     private void zoomIn() {
@@ -181,6 +173,27 @@ public class LoadImageApp extends JFrame {
             int newHeight = (int) (height / 1.1);
             Image newImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
             imageLabel.setIcon(new ImageIcon(newImage));
+        }
+    }
+
+    private void convertToGrayscale() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            BufferedImage grayscaleImage = new BufferedImage(
+                    image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+
+            ColorConvertOp op = new ColorConvertOp(ColorSpace.getInstance(ColorSpace.CS_GRAY), null);
+            op.filter(image, grayscaleImage);
+
+            ImageIcon grayscaleIcon = new ImageIcon(grayscaleImage);
+            imageLabel.setIcon(grayscaleIcon);
         }
     }
 
