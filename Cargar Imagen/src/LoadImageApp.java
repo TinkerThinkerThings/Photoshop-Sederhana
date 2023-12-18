@@ -1,14 +1,32 @@
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.color.ColorSpace;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
+import java.awt.image.RescaleOp;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.awt.color.ColorSpace;
-import java.awt.image.ColorConvertOp;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 public class LoadImageApp extends JFrame {
     private JLabel imageLabel;
@@ -130,6 +148,43 @@ public class LoadImageApp extends JFrame {
         histogramMenu.add(colorHistogramItem);
         menuBar.add(histogramMenu);
 
+        JMenuItem rotateRightMenuItem = new JMenuItem("Rotate Right");
+        rotateRightMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                rotateImage(90); // Rotasi 90 derajat ke kanan
+            }
+        });
+        viewMenu.add(rotateRightMenuItem);
+
+        JMenuItem rotateLeftMenuItem = new JMenuItem("Rotate Left");
+        rotateLeftMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                rotateImage(-90); // Rotasi 90 derajat ke kiri
+            }
+        });
+
+        JMenuItem saveMenuItem = new JMenuItem("Save");
+        saveMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveImage();
+            }
+        });
+        fileMenu.add(saveMenuItem);
+
+        viewMenu.add(rotateLeftMenuItem);
+        // menu save as
+        JMenuItem saveAsMenuItem = new JMenuItem("Save As");
+        saveAsMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveImageAs();
+            }
+        });
+        fileMenu.add(saveAsMenuItem);
+
         JMenu editMenu = new JMenu("Edit");
         JMenuItem resizeMenuItem = new JMenuItem("Resize Image");
         resizeMenuItem.addActionListener(new ActionListener() {
@@ -184,6 +239,16 @@ public class LoadImageApp extends JFrame {
         editMenu.add(negativeMenuItem);
         menuBar.add(editMenu);
         // Menambahkan item menu Histogram Warna
+
+        JMenuItem brightenMenuItem = new JMenuItem("Brighten");
+        brightenMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                brightenImage();
+            }
+        });
+        editMenu.add(brightenMenuItem);
+        // menambhkan menu brighten
     }
 
     private void zoomIn() {
@@ -351,6 +416,110 @@ public class LoadImageApp extends JFrame {
             int barHeight = (int) ((double) blueHistogram[i] / maxFrequency * histogramHeight);
             g.fillRect(startX + i * (barWidth + spacing), startY + 2 * (histogramHeight + 10) - barHeight, barWidth,
                     barHeight);
+        }
+    }
+
+    private void brightenImage() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            float scaleFactor = 1.2f; // Faktor peningkatan kecerahan
+            RescaleOp op = new RescaleOp(scaleFactor, 0, null);
+            BufferedImage brightenedImage = op.filter(image, null);
+
+            ImageIcon brightenedIcon = new ImageIcon(brightenedImage);
+            imageLabel.setIcon(brightenedIcon);
+        }
+    }
+
+    // Fungsi untuk rotasi gambar
+    private void rotateImage(int degrees) {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            Image image = icon.getImage();
+
+            // Mendapatkan lebar dan tinggi gambar asli
+            int width = image.getWidth(null);
+            int height = image.getHeight(null);
+
+            // Membuat BufferedImage baru dengan mode RGBA (agar bisa menambahkan latar
+            // belakang)
+            BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+            // Membuat latar belakang yang sesuai dengan gambar asli
+            Graphics2D g2d = bufferedImage.createGraphics();
+            g2d.setColor(Color.WHITE); // Atur latar belakang sesuai kebutuhan
+            g2d.fillRect(0, 0, width, height);
+
+            // Menghitung transformasi rotasi dan menerapkannya ke gambar asli
+            g2d.rotate(Math.toRadians(degrees), width / 2.0, height / 2.0);
+            g2d.drawImage(image, 0, 0, null);
+            g2d.dispose();
+
+            // Menampilkan gambar yang diputar kembali di imageLabel
+            ImageIcon rotatedIcon = new ImageIcon(bufferedImage);
+            imageLabel.setIcon(rotatedIcon);
+        }
+    }
+
+    private void saveImage() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            JFileChooser fileChooser = new JFileChooser();
+            int saveValue = fileChooser.showSaveDialog(null);
+            if (saveValue == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                try {
+                    ImageIO.write(image, "png", file); // Menggunakan format PNG untuk contoh ini
+                    JOptionPane.showMessageDialog(null, "Image saved successfully.", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void saveImageAs() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            JFileChooser fileChooser = new JFileChooser();
+            int saveValue = fileChooser.showSaveDialog(null);
+            if (saveValue == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                try {
+                    // Mendapatkan ekstensi file yang dipilih
+                    String fileName = file.getName();
+                    String formatName = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+                    // Menulis gambar dengan format yang dipilih oleh pengguna
+                    ImageIO.write(image, formatName, file);
+                    JOptionPane.showMessageDialog(null, "Image saved successfully.", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
     }
 
