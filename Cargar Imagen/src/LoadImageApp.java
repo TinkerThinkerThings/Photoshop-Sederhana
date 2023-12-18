@@ -118,7 +118,9 @@ public class LoadImageApp extends JFrame {
         viewMenu.add(resolutionItem);
         menuBar.add(viewMenu);
         JMenu histogramMenu = new JMenu("Histogram");
+
         JMenuItem colorHistogramItem = new JMenuItem("Color Histogram");
+
         colorHistogramItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
