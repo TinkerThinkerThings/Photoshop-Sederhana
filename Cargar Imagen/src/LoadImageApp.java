@@ -159,6 +159,15 @@ public class LoadImageApp extends JFrame {
         editMenu.add(blackWhiteMenuItem);
 
         menuBar.add(editMenu);
+        JMenuItem negativeMenuItem = new JMenuItem("Negative");
+        negativeMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                convertToNegative();
+            }
+        });
+        editMenu.add(negativeMenuItem);
+        menuBar.add(editMenu);
     }
 
     private void zoomIn() {
@@ -227,6 +236,35 @@ public class LoadImageApp extends JFrame {
 
             ImageIcon blackWhiteIcon = new ImageIcon(blackWhiteImage);
             imageLabel.setIcon(blackWhiteIcon);
+        }
+    }
+
+    private void convertToNegative() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            for (int y = 0; y < image.getHeight(); y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    int rgba = image.getRGB(x, y);
+                    Color color = new Color(rgba, true);
+
+                    int red = 255 - color.getRed();
+                    int green = 255 - color.getGreen();
+                    int blue = 255 - color.getBlue();
+
+                    Color negativeColor = new Color(red, green, blue, color.getAlpha());
+                    image.setRGB(x, y, negativeColor.getRGB());
+                }
+            }
+
+            ImageIcon negativeIcon = new ImageIcon(image);
+            imageLabel.setIcon(negativeIcon);
         }
     }
 
