@@ -148,6 +148,17 @@ public class LoadImageApp extends JFrame {
         editMenu.add(grayscaleMenuItem);
 
         menuBar.add(editMenu);
+
+        JMenuItem blackWhiteMenuItem = new JMenuItem("Black and White");
+        blackWhiteMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                convertToBlackAndWhite();
+            }
+        });
+        editMenu.add(blackWhiteMenuItem);
+
+        menuBar.add(editMenu);
     }
 
     private void zoomIn() {
@@ -194,6 +205,28 @@ public class LoadImageApp extends JFrame {
 
             ImageIcon grayscaleIcon = new ImageIcon(grayscaleImage);
             imageLabel.setIcon(grayscaleIcon);
+        }
+    }
+
+    private void convertToBlackAndWhite() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            BufferedImage blackWhiteImage = new BufferedImage(
+                    image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_BINARY);
+
+            ColorConvertOp op = new ColorConvertOp(
+                    ColorSpace.getInstance(ColorSpace.CS_GRAY), null);
+            op.filter(image, blackWhiteImage);
+
+            ImageIcon blackWhiteIcon = new ImageIcon(blackWhiteImage);
+            imageLabel.setIcon(blackWhiteIcon);
         }
     }
 
