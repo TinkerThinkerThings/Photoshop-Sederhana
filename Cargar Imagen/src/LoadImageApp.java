@@ -36,10 +36,12 @@ public class LoadImageApp extends JFrame {
     private JButton zoomOutButton;
 
     public LoadImageApp() {
+
         setTitle("Cargar Imagen");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 600);
-
+        JLabel secondLabel = new JLabel();
+        secondLabel.setHorizontalAlignment(JLabel.CENTER);
         JButton loadButton = new JButton("Insert Picture");
         imageLabel = new JLabel();
         imageLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -75,12 +77,31 @@ public class LoadImageApp extends JFrame {
                     File selectedFile = fileChooser.getSelectedFile();
                     try {
                         BufferedImage image = ImageIO.read(selectedFile);
+
+                        int canvasWidth = 1000;
+                        int canvasHeight = 1000;
+
+                        if (image.getWidth() > canvasWidth || image.getHeight() > canvasHeight) {
+                            double widthRatio = (double) canvasWidth / image.getWidth();
+                            double heightRatio = (double) canvasHeight / image.getHeight();
+                            double scaleFactor = Math.min(widthRatio, heightRatio);
+
+                            int newWidth = (int) (image.getWidth() * scaleFactor);
+                            int newHeight = (int) (image.getHeight() * scaleFactor);
+
+                            Image scaledImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+                            image = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+                            Graphics2D g = image.createGraphics();
+                            g.drawImage(scaledImage, 0, 0, null);
+                            g.dispose();
+                        }
+
                         ImageIcon icon = new ImageIcon(image);
+
                         imageLabel.setIcon(icon);
-                        rgbLabel.setText("");
-                        int width = image.getWidth();
-                        int height = image.getHeight();
-                        resolutionLabel.setText("Resolusi: " + width + "x" + height);
+                        secondLabel.setIcon(icon);
+
+                        // ... rest of your code ...
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
@@ -249,6 +270,192 @@ public class LoadImageApp extends JFrame {
         });
         editMenu.add(brightenMenuItem);
         // menambhkan menu brighten
+        JMenuItem edgeDetectionMenuItem = new JMenuItem("Edge Detection");
+        edgeDetectionMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                detectEdges();
+            }
+        });
+        editMenu.add(edgeDetectionMenuItem);
+
+        JMenuItem normalizeEdgesMenuItem = new JMenuItem("Normalize Edges");
+        normalizeEdgesMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                normalizeEdges();
+            }
+        });
+        editMenu.add(normalizeEdgesMenuItem);
+        JMenuItem chaincodeMenuItem = new JMenuItem("Convert to Chaincode");
+        chaincodeMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                convertToChaincode();
+            }
+        });
+        editMenu.add(chaincodeMenuItem);
+
+    }
+
+    private void normalizeEdges() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            int[][] sobelVertical = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
+            int[][] sobelHorizontal = { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } };
+
+            BufferedImage edgeDetectedImage = new BufferedImage(
+                    image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            for (int y = 1; y < image.getHeight() - 1; y++) {
+                for (int x = 1; x < image.getWidth() - 1; x++) {
+                    int sumX = 0, sumY = 0;
+                    for (int i = -1; i <= 1; i++) {
+                        for (int j = -1; j <= 1; j++) {
+                            int pixel = image.getRGB(x + i, y + j);
+                            int gray = (int) (0.21 * ((pixel >> 16) & 0xff) + 0.72 * ((pixel >> 8) & 0xff) +
+                                    0.07 * (pixel & 0xff));
+
+                            sumX += sobelHorizontal[i + 1][j + 1] * gray;
+                            sumY += sobelVertical[i + 1][j + 1] * gray;
+                        }
+                    }
+
+                    int magnitude = (int) Math.sqrt(sumX * sumX + sumY * sumY);
+                    magnitude = Math.min(255, Math.max(0, magnitude));
+                    int edgePixel = 0xff000000 | (magnitude << 16) | (magnitude << 8) | magnitude;
+                    edgeDetectedImage.setRGB(x, y, edgePixel);
+                }
+            }
+
+            // Normalize edges for better visibility
+            float[] scales = { 1f, 1f, 1f };
+            float[] offsets = { 0, 0, 0 };
+            RescaleOp rescaleOp = new RescaleOp(scales, offsets, null);
+            BufferedImage normalizedImage = rescaleOp.filter(edgeDetectedImage, null);
+
+            ImageIcon edgeIcon = new ImageIcon(normalizedImage);
+            imageLabel.setIcon(edgeIcon);
+        }
+    }
+
+    private void convertToChaincode() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            // Konversi tepi menjadi chaincode
+            StringBuilder chaincode = new StringBuilder();
+            boolean[][] visited = new boolean[image.getWidth()][image.getHeight()];
+
+            // Temukan titik awal (pixel pertama yang ditemukan)
+            int startX = -1, startY = -1;
+            outerloop: for (int y = 0; y < image.getHeight(); y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    if ((image.getRGB(x, y) & 0x00FFFFFF) == 0xFFFFFF) {
+                        startX = x;
+                        startY = y;
+                        break outerloop;
+                    }
+                }
+            }
+
+            if (startX != -1 && startY != -1) {
+                int currentX = startX, currentY = startY;
+                int nextX, nextY;
+                int[] dx = { -1, -1, 0, 1, 1, 1, 0, -1 };
+                int[] dy = { 0, -1, -1, -1, 0, 1, 1, 1 };
+                int direction = 7; // Mulai dari arah barat laut
+
+                do {
+                    chaincode.append(direction);
+                    visited[currentX][currentY] = true;
+
+                    boolean foundNext = false;
+                    for (int i = 0; i < 8; i++) {
+                        nextX = currentX + dx[(direction + i) % 8];
+                        nextY = currentY + dy[(direction + i) % 8];
+
+                        if (nextX >= 0 && nextX < image.getWidth() &&
+                                nextY >= 0 && nextY < image.getHeight() &&
+                                (image.getRGB(nextX, nextY) & 0x00FFFFFF) == 0xFFFFFF &&
+                                !visited[nextX][nextY]) {
+
+                            currentX = nextX;
+                            currentY = nextY;
+                            direction = (direction + i + 5) % 8; // Update arah berikutnya
+                            foundNext = true;
+                            break;
+                        }
+                    }
+
+                    if (!foundNext)
+                        break;
+
+                } while (!(currentX == startX && currentY == startY));
+
+                JOptionPane.showMessageDialog(null, "Chaincode: " + chaincode.toString(), "Chaincode Result",
+                        JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(null, "No edge found to convert to chaincode!", "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void detectEdges() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            int[][] sobelVertical = { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } };
+            int[][] sobelHorizontal = { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } };
+
+            BufferedImage edgeDetectedImage = new BufferedImage(
+                    image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            for (int y = 1; y < image.getHeight() - 1; y++) {
+                for (int x = 1; x < image.getWidth() - 1; x++) {
+                    int sumX = 0, sumY = 0;
+                    for (int i = -1; i <= 1; i++) {
+                        for (int j = -1; j <= 1; j++) {
+                            int pixel = image.getRGB(x + i, y + j);
+                            int gray = (int) (0.21 * ((pixel >> 16) & 0xff) + 0.72 * ((pixel >> 8) & 0xff) +
+                                    0.07 * (pixel & 0xff));
+
+                            sumX += sobelHorizontal[i + 1][j + 1] * gray;
+                            sumY += sobelVertical[i + 1][j + 1] * gray;
+                        }
+                    }
+
+                    int magnitude = (int) Math.sqrt(sumX * sumX + sumY * sumY);
+                    magnitude = Math.min(255, Math.max(0, magnitude));
+                    int edgePixel = 0xff000000 | (magnitude << 16) | (magnitude << 8) | magnitude;
+                    edgeDetectedImage.setRGB(x, y, edgePixel);
+                }
+            }
+
+            ImageIcon edgeIcon = new ImageIcon(edgeDetectedImage);
+            imageLabel.setIcon(edgeIcon);
+        }
+
     }
 
     private void zoomIn() {
