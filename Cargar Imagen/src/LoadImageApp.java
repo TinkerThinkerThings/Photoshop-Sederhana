@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
 import java.awt.image.RescaleOp;
@@ -26,7 +28,9 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
+import javax.swing.text.View;
 
 public class LoadImageApp extends JFrame {
     private JLabel imageLabel;
@@ -50,6 +54,22 @@ public class LoadImageApp extends JFrame {
         zoomInButton = new JButton("Zoom In");
         zoomOutButton = new JButton("Zoom Out");
         JButton showResolutionButton = new JButton("Detail");
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+
+        // Panel untuk canvas
+        JPanel canvasPanel = new JPanel();
+        canvasPanel.setLayout(new BorderLayout());
+        canvasPanel.add(imageLabel, BorderLayout.CENTER);
+
+        // Panel untuk elemen-elemen lainnya (histogram, dll.)
+        JPanel otherElementsPanel = new JPanel();
+        otherElementsPanel.setLayout(new BorderLayout());
+        otherElementsPanel.add(rgbLabel, BorderLayout.NORTH); // Contoh: Tambahkan elemen lain di sini
+
+        splitPane.setLeftComponent(canvasPanel);
+        splitPane.setRightComponent(otherElementsPanel);
+
+        add(splitPane, BorderLayout.CENTER);
         zoomInButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 zoomIn();
@@ -296,6 +316,37 @@ public class LoadImageApp extends JFrame {
         });
         editMenu.add(chaincodeMenuItem);
 
+        JMenuItem mirrorMenuItem = new JMenuItem("Mirror");
+        mirrorMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                mirrorImage();
+            }
+        });
+        viewMenu.add(mirrorMenuItem);
+
+    }
+
+    private void mirrorImage() {
+        if (imageLabel.getIcon() != null) {
+            ImageIcon icon = (ImageIcon) imageLabel.getIcon();
+            BufferedImage image = new BufferedImage(
+                    icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g = image.createGraphics();
+            icon.paintIcon(null, g, 0, 0);
+            g.dispose();
+
+            // Proses cermin gambar
+            AffineTransform tx = AffineTransform.getScaleInstance(-1, 1);
+            tx.translate(-image.getWidth(null), 0);
+            AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+            image = op.filter(image, null);
+
+            // Tampilkan gambar yang sudah di-mirror di imageLabel
+            ImageIcon mirroredIcon = new ImageIcon(image);
+            imageLabel.setIcon(mirroredIcon);
+        }
     }
 
     private void normalizeEdges() {
